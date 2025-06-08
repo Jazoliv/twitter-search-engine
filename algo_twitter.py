@@ -16,51 +16,18 @@ FIN = "Finalizando..."
 DB_PATH = "db"
 LONGITUD_TOKEN_POR_DEFECTO = 3
 
-"""valida que el ingreso de la longitud del token sea un numero natural"""
-def validar_n_minima(args):
-    if len(args) > 0:
-        try:
-            n = int(args[0])
-            if n > 0:
-                return n
-        except ValueError:
-            pass
-        print(TOKENIZACION_INVALIDA)
-        return None
-    return LONGITUD_TOKEN_POR_DEFECTO
-
-#FUNCION DEL TP2
-def normalizacion(palabra):
-    letras_normalizadas = {
-        "á": "a",
-        "é": "e",
-        "í": "i",
-        "ó": "o",
-        "ú": "u",
-        "ñ": "n",
-        "ü": "u",
-    }
-
-    resultado = ""
-    for carac in palabra:
-        if carac.isalnum():
-            carac_normalizado = letras_normalizadas.get(carac.lower(), carac.lower())
-            resultado += carac_normalizado
-
-    return resultado
-
 
 class TweetDatabase:
     def __init__(self, n_minimo=LONGITUD_TOKEN_POR_DEFECTO):
         self.tweets = {}
         self.tokens_palabras = {}
         self.tokens_segmentos = {}
-        self.min_longitud_token = n_minimo #--> AGREGUE EL N MINIMO
+        self.min_longitud_token = n_minimo
         self.indice = 0
 
         self.tweet_a_palabras = {}
         self.tweet_a_tokens = {}
-#FUNCIONES DEL TP2, DESDE LINEA 64 A 156
+
     def _tokenizacion_por_palabras(self, tweet):
         palabras_normalizadas = []
         for palabra in tweet.split():
@@ -71,7 +38,7 @@ class TweetDatabase:
         tokens = []
         for palabra in self._tokenizacion_por_palabras(tweet):
             for i in range(len(palabra)):
-                if (len(palabra) - i) >= self.min_longitud_token: #--> CAMBIE POR N MINIMO
+                if (len(palabra) - i) >= self.min_longitud_token:
                     for longitud in range(
                         self.min_longitud_token, len(palabra) - i + 1
                     ):
@@ -124,10 +91,6 @@ class TweetDatabase:
             tweet = self.tweets.pop(id_tweet)
             self._eliminar_palabras_claves(id_tweet)
             self._eliminar_tokens(id_tweet)
-            archivo = os.path.join(DB_PATH, f"{id_tweet}.txt") #--> AGREGUE PARA QUE ELIMINE EL CONTENIDO DEL ARCHIVO
-            if os.path.exists(archivo):
-                with open(archivo, "w", encoding="utf-8") as f:
-                    f.write("") #--> Y LO DEJE VACIO
             return tweet
         return None
 
@@ -141,9 +104,9 @@ class TweetDatabase:
             if clave in self.tokens_palabras:
                 for id in self.tokens_palabras[clave]:
                     match_por_clave[clave].add(id)
-            if len(clave) >= self.min_longitud_token and clave in self.tokens_segmentos: #--> AGREGUE ESTO QUE JUNTA TODOS LOS ID QUE CONTIENEN UN TOKEN VALIDOS 
+            if len(clave) >= self.min_longitud_token and clave in self.tokens_segmentos:
                 for id in self.tokens_segmentos[clave]:
-                    match_por_clave[clave].add(id) #--> Y LOS GUARDA EN MATCH POR CLAVE AGRUPANDOLOS COMO TOKEN 
+                    match_por_clave[clave].add(id)
 
         lista_indices = list(match_por_clave.values())
         if not lista_indices:
@@ -154,9 +117,10 @@ class TweetDatabase:
             interseccion = interseccion.intersection(inds)
 
         return list(interseccion)
-        
-#FUNCIONES DEL TP3
+
+    # FUNCIONES DEL TP3
     """verificamos que las rutas existan"""
+
     def rutas_son_validas(self, rutas: list[str]):
         for ruta in rutas:
             if not os.path.exists(ruta):
@@ -166,7 +130,9 @@ class TweetDatabase:
             if not ruta.lower().endswith(".txt"):
                 return False
         return True
+
     """procesa archivos y directorios y los agrega"""
+
     def agregar_tweets_desde_rutas(self, rutas: list[str]):
         cantidad_agregados = 0
         for ruta in rutas:
@@ -175,7 +141,9 @@ class TweetDatabase:
             elif os.path.exists(ruta):
                 cantidad_agregados += self._procesar_archivo(ruta)
         return cantidad_agregados
+
     """"verifica que el archivo exista"""
+
     def _procesar_archivo(self, ruta: str):
         cantidad = 0
         try:
@@ -188,7 +156,9 @@ class TweetDatabase:
         except (OSError, IOError):
             pass
         return cantidad
+
     """verifica que el directorio exista"""
+
     def _procesar_directorio(self, ruta_directorio: str):
         cantidad = 0
         try:
@@ -202,7 +172,9 @@ class TweetDatabase:
         except (FileNotFoundError, NotADirectoryError):
             pass
         return cantidad
+
     """copia los tweets en el nuevo archivo a exportar"""
+
     def copiar_tweets_a_exportar(self, ruta):
         if not ruta.lower().endswith(".txt"):
             return False
@@ -220,29 +192,34 @@ class TweetDatabase:
             return True
         except OSError:
             return False
+
     """guarda los tweets en la base de datos local como archivos de texto"""
+
     def guardar_tweets(self):
         try:
-            for id_tweet in self.tweets:
+            for id_tweet in range(self.indice):
                 ruta = os.path.join(DB_PATH, f"{id_tweet}.txt")
+                contenido = self.tweets.get(id_tweet, "")
                 with open(ruta, "w", encoding="utf-8") as f:
-                    f.write(f"{self.tweets[id_tweet]}\n")
+                    f.write(f"{contenido}\n")
+            self.guardar_indice()
         except Exception:
             print(DB_INVALIDA)
             sys.exit(1)
+
     """carga los tweets desde la base de datos local y reconstruye los índices"""
+
     def cargar_tweets(self):
         self.tweets = {}
-        self.indice = 0
         self.tokens_palabras = {}
         self.tokens_segmentos = {}
         self.tweet_a_palabras = {}
         self.tweet_a_tokens = {}
-        max_id = -1
+
         try:
             archivos = os.listdir(DB_PATH)
             for archivo in archivos:
-                if archivo.lower().endswith(".txt"):
+                if archivo.lower().endswith(".txt") and archivo != "indice.txt":
                     id_str = archivo[:-4]
                     if id_str.isdigit():
                         id_tweet = int(id_str)
@@ -253,14 +230,72 @@ class TweetDatabase:
                                 self.tweets[id_tweet] = contenido
                                 self._agregar_palabras_claves(contenido, id_tweet)
                                 self._agregar_tokens(contenido, id_tweet)
-                        if id_tweet > max_id:
-                            max_id = id_tweet
-            self.indice = max_id + 1
+            self.cargar_indice()  # ← se llama acá
         except Exception:
             print(DB_INVALIDA)
             sys.exit(1)
 
-#FUNCIONES DEL TP2, DESDE 264 HASTA 406
+    def guardar_indice(self):
+        try:
+            with open(os.path.join(DB_PATH, "indice.txt"), "w", encoding="utf-8") as f:
+                f.write(str(self.indice))
+        except Exception:
+            print(DB_INVALIDA)
+            sys.exit(1)
+
+    def cargar_indice(self):
+        try:
+            ruta = os.path.join(DB_PATH, "indice.txt")
+            if os.path.exists(ruta):
+                with open(ruta, "r", encoding="utf-8") as f:
+                    self.indice = int(f.read().strip())
+            else:
+                self.indice = max(self.tweets.keys(), default=-1) + 1
+        except Exception:
+            print(DB_INVALIDA)
+            sys.exit(1)
+
+
+def normalizacion(palabra):
+    letras_normalizadas = {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+        "ñ": "n",
+        "ü": "u",
+    }
+
+    resultado = ""
+    for carac in palabra:
+        if carac.isalnum():
+            carac_normalizado = letras_normalizadas.get(carac.lower(), carac.lower())
+            resultado += carac_normalizado
+
+    return resultado
+
+
+"""valida que el ingreso de la longitud del token sea un numero natural"""
+
+
+def validar_n_minima(args):
+    if len(args) > 1:
+        arg = args[1]
+        if arg.startswith("+"):
+            print(TOKENIZACION_INVALIDA)
+            return None
+        try:
+            n = int(args[1])
+            if n > 0:
+                return n
+        except ValueError:
+            pass
+        print(TOKENIZACION_INVALIDA)
+        return None
+    return LONGITUD_TOKEN_POR_DEFECTO
+
+
 def validar_input_es_segmento_valido(input: str):
     if "-" in input:
         partes = input.split("-")
@@ -385,7 +420,7 @@ def buscar_tweet(database: TweetDatabase):
 
     if resultado:
         print(f"{RESULTADOS_BUSQUEDA}\n")
-        for i in resultado:
+        for i in sorted(resultado):
             if i in database.tweets:
                 print(f"{i}. {database.tweets[i]}")
     else:
@@ -405,7 +440,11 @@ def eliminar_tweet(database: TweetDatabase):
         eliminar_tweets(database, eliminados)
         break
 
-#FUNCION IMPORTAR DEL TP3
+
+# FUNCION IMPORTAR DEL TP3
+"""Importa tweets desde rutas ingresadas por el usuario"""
+
+
 def importar_tweet(database: TweetDatabase):
     while True:
         rutas = input("Ingrese la ruta del archivo a cargar:\n>>> ").strip()
@@ -422,7 +461,11 @@ def importar_tweet(database: TweetDatabase):
             return
         print(ERROR_IMPORTACION)
 
-#FUNCION EXPORTAR DEL TP3
+
+# FUNCION EXPORTAR DEL TP3
+"""Exporta los tweets creados a un archivo ingresado por el usuario"""
+
+
 def exportar_tweets(database: TweetDatabase):
     while True:
         ruta = input("Ingrese la ruta del archivo a guardar:\n>>> ")
@@ -433,7 +476,21 @@ def exportar_tweets(database: TweetDatabase):
             break
         print(DIRECCION_ERRONEA)
 
-#SEPARE EL MENU DEL MAIN PORQUE EL CORRECTOR AUTOMATICO NO ME DEJABA USAR UNA FUNCION MAIN TAN LARGA
+
+def inicializar_db(n=LONGITUD_TOKEN_POR_DEFECTO):
+    if not os.path.exists(DB_PATH) or not os.path.isdir(DB_PATH):
+        print(DB_INVALIDA)
+        sys.exit(1)
+    database = TweetDatabase(n_minimo=n)
+    database.cargar_tweets()
+    database.cargar_tweets()
+    return database
+
+
+def salir():
+    print(FIN)
+
+
 def menu(database: TweetDatabase):
     while True:
         opcion = input(
@@ -451,6 +508,7 @@ def menu(database: TweetDatabase):
             id_tweet = crear_tweet(database)
             if id_tweet is not None:
                 database.guardar_tweets()
+                database.guardar_indice()
         elif opcion == "2":
             buscar_tweet(database)
         elif opcion == "3":
@@ -460,29 +518,23 @@ def menu(database: TweetDatabase):
         elif opcion == "4":
             importar_tweet(database)
             database.guardar_tweets()
+            database.guardar_indice()
         elif opcion == "5":
             exportar_tweets(database)
         elif opcion == "6":
             database.guardar_tweets()
+            database.guardar_indice()
             salir()
             break
         else:
             print(INPUT_INVALIDO)
 
 
-def salir():
-    print(FIN)
-
-#CAMBIOS EN EL MAIN, IMPORTAMOS ARGS
 def main(args=[]):
-    if not os.path.exists(DB_PATH) or not os.path.isdir(DB_PATH):
-        print(DB_INVALIDA)
-        sys.exit(1)
     n_tokens = validar_n_minima(args)
     if n_tokens is None:
         return
-    database = TweetDatabase(n_minimo=n_tokens)
-    database.cargar_tweets()
+    database = inicializar_db(n_tokens)
     try:
         menu(database)
     except KeyboardInterrupt:
@@ -491,4 +543,4 @@ def main(args=[]):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(sys.argv)
