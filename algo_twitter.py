@@ -29,7 +29,7 @@ def validar_n_minima(args):
         return None
     return LONGITUD_TOKEN_POR_DEFECTO
 
-
+#FUNCION DEL TP2
 def normalizacion(palabra):
     letras_normalizadas = {
         "á": "a",
@@ -55,12 +55,12 @@ class TweetDatabase:
         self.tweets = {}
         self.tokens_palabras = {}
         self.tokens_segmentos = {}
-        self.min_longitud_token = n_minimo
+        self.min_longitud_token = n_minimo #--> AGREGUE EL N MINIMO
         self.indice = 0
 
         self.tweet_a_palabras = {}
         self.tweet_a_tokens = {}
-
+#FUNCIONES DEL TP2, DESDE LINEA 64 A 156
     def _tokenizacion_por_palabras(self, tweet):
         palabras_normalizadas = []
         for palabra in tweet.split():
@@ -71,7 +71,7 @@ class TweetDatabase:
         tokens = []
         for palabra in self._tokenizacion_por_palabras(tweet):
             for i in range(len(palabra)):
-                if (len(palabra) - i) >= self.min_longitud_token:
+                if (len(palabra) - i) >= self.min_longitud_token: #--> CAMBIE POR N MINIMO
                     for longitud in range(
                         self.min_longitud_token, len(palabra) - i + 1
                     ):
@@ -124,10 +124,10 @@ class TweetDatabase:
             tweet = self.tweets.pop(id_tweet)
             self._eliminar_palabras_claves(id_tweet)
             self._eliminar_tokens(id_tweet)
-            archivo = os.path.join(DB_PATH, f"{id_tweet}.txt")
+            archivo = os.path.join(DB_PATH, f"{id_tweet}.txt") #--> AGREGUE PARA QUE ELIMINE EL CONTENIDO DEL ARCHIVO
             if os.path.exists(archivo):
                 with open(archivo, "w", encoding="utf-8") as f:
-                    f.write("")
+                    f.write("") #--> Y LO DEJE VACIO
             return tweet
         return None
 
@@ -141,9 +141,9 @@ class TweetDatabase:
             if clave in self.tokens_palabras:
                 for id in self.tokens_palabras[clave]:
                     match_por_clave[clave].add(id)
-            if len(clave) >= self.min_longitud_token and clave in self.tokens_segmentos:
+            if len(clave) >= self.min_longitud_token and clave in self.tokens_segmentos: #--> AGREGUE ESTO QUE JUNTA TODOS LOS ID QUE CONTIENEN UN TOKEN VALIDOS 
                 for id in self.tokens_segmentos[clave]:
-                    match_por_clave[clave].add(id)
+                    match_por_clave[clave].add(id) #--> Y LOS GUARDA EN MATCH POR CLAVE AGRUPANDOLOS COMO TOKEN 
 
         lista_indices = list(match_por_clave.values())
         if not lista_indices:
@@ -260,7 +260,7 @@ class TweetDatabase:
             print(DB_INVALIDA)
             sys.exit(1)
 
-
+#FUNCIONES DEL TP2, DESDE 264 HASTA 406
 def validar_input_es_segmento_valido(input: str):
     if "-" in input:
         partes = input.split("-")
